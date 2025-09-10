@@ -162,7 +162,7 @@
             cursor: pointer;
         }
         
-        .opacity-value {
+        .value-display {
             font-size: 1.2rem;
             font-weight: bold;
             color: #4b6cb7;
@@ -202,6 +202,31 @@
             margin-top: 20px;
         }
         
+        .position-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .position-btn {
+            padding: 10px;
+            background-color: #eaeaea;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .position-btn:hover {
+            background-color: #d4d4d4;
+        }
+        
+        .position-btn.active {
+            background-color: #4b6cb7;
+            color: white;
+        }
+        
         footer {
             text-align: center;
             padding: 20px;
@@ -217,6 +242,10 @@
             .controls {
                 margin-right: 0;
             }
+            
+            .position-controls {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
@@ -224,7 +253,7 @@
     <div class="container">
         <header>
             <h1>Document Watermarking Tool</h1>
-            <p class="subtitle">Upload an image, add a watermark with adjustable opacity, and export as PDF or PNG</p>
+            <p class="subtitle">Upload an image, add a customizable watermark, and export as PDF or PNG</p>
         </header>
         
         <div class="main-content">
@@ -247,8 +276,38 @@
                     </label>
                     
                     <div class="slider-container">
-                        <label>Opacity Level: <span id="opacityValue" class="opacity-value">50%</span></label>
+                        <label>Opacity Level: <span id="opacityValue" class="value-display">50%</span></label>
                         <input type="range" min="0" max="100" value="50" class="slider" id="opacitySlider">
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label>Size: <span id="sizeValue" class="value-display">50%</span></label>
+                        <input type="range" min="5" max="200" value="50" class="slider" id="sizeSlider">
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label>Position X: <span id="positionXValue" class="value-display">50%</span></label>
+                        <input type="range" min="0" max="100" value="50" class="slider" id="positionXSlider">
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label>Position Y: <span id="positionYValue" class="value-display">50%</span></label>
+                        <input type="range" min="0" max="100" value="50" class="slider" id="positionYSlider">
+                    </div>
+                    
+                    <div>
+                        <label>Quick Position:</label>
+                        <div class="position-controls">
+                            <button class="position-btn" data-pos="top-left">↖</button>
+                            <button class="position-btn" data-pos="top-center">↑</button>
+                            <button class="position-btn" data-pos="top-right">↗</button>
+                            <button class="position-btn" data-pos="center-left">←</button>
+                            <button class="position-btn active" data-pos="center">Center</button>
+                            <button class="position-btn" data-pos="center-right">→</button>
+                            <button class="position-btn" data-pos="bottom-left">↙</button>
+                            <button class="position-btn" data-pos="bottom-center">↓</button>
+                            <button class="position-btn" data-pos="bottom-right">↘</button>
+                        </div>
                     </div>
                 </div>
                 
@@ -283,15 +342,23 @@
             const watermarkInput = document.getElementById('watermarkInput');
             const opacitySlider = document.getElementById('opacitySlider');
             const opacityValue = document.getElementById('opacityValue');
+            const sizeSlider = document.getElementById('sizeSlider');
+            const sizeValue = document.getElementById('sizeValue');
+            const positionXSlider = document.getElementById('positionXSlider');
+            const positionXValue = document.getElementById('positionXValue');
+            const positionYSlider = document.getElementById('positionYSlider');
+            const positionYValue = document.getElementById('positionYValue');
             const exportPng = document.getElementById('exportPng');
             const exportPdf = document.getElementById('exportPdf');
             const previewCanvas = document.getElementById('previewCanvas');
             const previewText = document.getElementById('previewText');
             const watermarkPreview = document.getElementById('watermarkPreview');
+            const positionButtons = document.querySelectorAll('.position-btn');
             const ctx = previewCanvas.getContext('2d');
             
             let originalImage = null;
             let watermarkImage = null;
+            let currentPosition = 'center';
             
             // Handle document image upload
             fileInput.addEventListener('change', function(e) {
@@ -335,6 +402,83 @@
                 drawImages();
             });
             
+            // Update size value and redraw images
+            sizeSlider.addEventListener('input', function() {
+                sizeValue.textContent = `${this.value}%`;
+                drawImages();
+            });
+            
+            // Update position X value and redraw images
+            positionXSlider.addEventListener('input', function() {
+                positionXValue.textContent = `${this.value}%`;
+                drawImages();
+            });
+            
+            // Update position Y value and redraw images
+            positionYSlider.addEventListener('input', function() {
+                positionYValue.textContent = `${this.value}%`;
+                drawImages();
+            });
+            
+            // Position buttons event listeners
+            positionButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    positionButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    currentPosition = this.dataset.pos;
+                    updatePositionSliders();
+                    drawImages();
+                });
+            });
+            
+            // Update position sliders based on selected position
+            function updatePositionSliders() {
+                switch(currentPosition) {
+                    case 'top-left':
+                        positionXSlider.value = 10;
+                        positionYSlider.value = 10;
+                        break;
+                    case 'top-center':
+                        positionXSlider.value = 50;
+                        positionYSlider.value = 10;
+                        break;
+                    case 'top-right':
+                        positionXSlider.value = 90;
+                        positionYSlider.value = 10;
+                        break;
+                    case 'center-left':
+                        positionXSlider.value = 10;
+                        positionYSlider.value = 50;
+                        break;
+                    case 'center':
+                        positionXSlider.value = 50;
+                        positionYSlider.value = 50;
+                        break;
+                    case 'center-right':
+                        positionXSlider.value = 90;
+                        positionYSlider.value = 50;
+                        break;
+                    case 'bottom-left':
+                        positionXSlider.value = 10;
+                        positionYSlider.value = 90;
+                        break;
+                    case 'bottom-center':
+                        positionXSlider.value = 50;
+                        positionYSlider.value = 90;
+                        break;
+                    case 'bottom-right':
+                        positionXSlider.value = 90;
+                        positionYSlider.value = 90;
+                        break;
+                }
+                
+                positionXValue.textContent = `${positionXSlider.value}%`;
+                positionYValue.textContent = `${positionYSlider.value}%`;
+            }
+            
             // Draw both images on canvas
             function drawImages() {
                 if (!originalImage) return;
@@ -352,13 +496,21 @@
                 // Draw watermark if available
                 if (watermarkImage) {
                     const opacity = opacitySlider.value / 100;
+                    const size = sizeSlider.value / 100;
+                    const posX = positionXSlider.value / 100;
+                    const posY = positionYSlider.value / 100;
+                    
                     ctx.globalAlpha = opacity;
                     
-                    // Calculate watermark position (center)
-                    const x = (previewCanvas.width - watermarkImage.width) / 2;
-                    const y = (previewCanvas.height - watermarkImage.height) / 2;
+                    // Calculate watermark size
+                    const watermarkWidth = watermarkImage.width * size;
+                    const watermarkHeight = watermarkImage.height * size;
                     
-                    ctx.drawImage(watermarkImage, x, y);
+                    // Calculate watermark position
+                    const x = (previewCanvas.width - watermarkWidth) * posX;
+                    const y = (previewCanvas.height - watermarkHeight) * posY;
+                    
+                    ctx.drawImage(watermarkImage, x, y, watermarkWidth, watermarkHeight);
                     ctx.globalAlpha = 1.0;
                 }
             }
