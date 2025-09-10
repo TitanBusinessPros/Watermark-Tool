@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Watermarking Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 25px;
+        }
+        
+        .controls {
+            flex: 1;
+            min-width: 300px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            margin-right: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .preview {
+            flex: 2;
+            min-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .control-group {
+            margin-bottom: 25px;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 8px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #4b6cb7;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            background-color: #eef2f9;
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            color: #4b6cb7;
+            margin-bottom: 10px;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        .btn-export {
+            background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%);
+            margin-right: 10px;
+        }
+        
+        .slider-container {
+            margin: 20px 0;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #d3d3d3;
+            outline: none;
+            border-radius: 4px;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4b6cb7;
+            cursor: pointer;
+        }
+        
+        .opacity-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #4b6cb7;
+            text-align: center;
+            margin-top: 10px;
+        }
+        
+        .canvas-container {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        #previewCanvas {
+            max-width: 100%;
+            max-height: 400px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ddd;
+        }
+        
+        .watermark-preview {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.5;
+            pointer-events: none;
+            font-size: 3rem;
+            color: #4b6cb7;
+            display: none;
+        }
+        
+        .export-options {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .controls {
+                margin-right: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Document Watermarking Tool</h1>
+            <p class="subtitle">Upload an image, add a watermark with adjustable opacity, and export as PDF or PNG</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="controls">
+                <div class="control-group">
+                    <h2>Upload Document</h2>
+                    <label class="upload-area" id="uploadLabel">
+                        <div class="upload-icon">📄</div>
+                        <p>Click to browse or drag & drop your file</p>
+                        <input type="file" id="fileInput" accept="image/*">
+                    </label>
+                </div>
+                
+                <div class="control-group">
+                    <h2>Watermark Settings</h2>
+                    <label class="upload-area" id="watermarkLabel">
+                        <div class="upload-icon">💧</div>
+                        <p>Upload Watermark Image</p>
+                        <input type="file" id="watermarkInput" accept="image/*">
+                    </label>
+                    
+                    <div class="slider-container">
+                        <label>Opacity Level: <span id="opacityValue" class="opacity-value">50%</span></label>
+                        <input type="range" min="0" max="100" value="50" class="slider" id="opacitySlider">
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h2>Export Options</h2>
+                    <div class="export-options">
+                        <button class="btn btn-export" id="exportPng">Export as PNG</button>
+                        <button class="btn" id="exportPdf">Export as PDF</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="preview">
+                <h2>Preview</h2>
+                <div class="canvas-container">
+                    <canvas id="previewCanvas"></canvas>
+                    <div class="watermark-preview" id="watermarkPreview">Watermark Preview</div>
+                </div>
+                <p id="previewText">Your watermarked document will appear here</p>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Document Watermarking Tool &copy; 2023 | All rights reserved</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get elements
+            const fileInput = document.getElementById('fileInput');
+            const watermarkInput = document.getElementById('watermarkInput');
+            const opacitySlider = document.getElementById('opacitySlider');
+            const opacityValue = document.getElementById('opacityValue');
+            const exportPng = document.getElementById('exportPng');
+            const exportPdf = document.getElementById('exportPdf');
+            const previewCanvas = document.getElementById('previewCanvas');
+            const previewText = document.getElementById('previewText');
+            const watermarkPreview = document.getElementById('watermarkPreview');
+            const ctx = previewCanvas.getContext('2d');
+            
+            let originalImage = null;
+            let watermarkImage = null;
+            
+            // Handle document image upload
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = new Image();
+                        img.onload = function() {
+                            originalImage = img;
+                            drawImages();
+                            previewText.style.display = 'none';
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Handle watermark image upload
+            watermarkInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = new Image();
+                        img.onload = function() {
+                            watermarkImage = img;
+                            drawImages();
+                            watermarkPreview.style.display = 'none';
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Update opacity value and redraw images
+            opacitySlider.addEventListener('input', function() {
+                opacityValue.textContent = `${this.value}%`;
+                drawImages();
+            });
+            
+            // Draw both images on canvas
+            function drawImages() {
+                if (!originalImage) return;
+                
+                // Set canvas dimensions to match original image
+                previewCanvas.width = originalImage.width;
+                previewCanvas.height = originalImage.height;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                
+                // Draw original image
+                ctx.drawImage(originalImage, 0, 0, previewCanvas.width, previewCanvas.height);
+                
+                // Draw watermark if available
+                if (watermarkImage) {
+                    const opacity = opacitySlider.value / 100;
+                    ctx.globalAlpha = opacity;
+                    
+                    // Calculate watermark position (center)
+                    const x = (previewCanvas.width - watermarkImage.width) / 2;
+                    const y = (previewCanvas.height - watermarkImage.height) / 2;
+                    
+                    ctx.drawImage(watermarkImage, x, y);
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+            
+            // Export as PNG
+            exportPng.addEventListener('click', function() {
+                if (!originalImage) {
+                    alert('Please upload an image first');
+                    return;
+                }
+                
+                const link = document.createElement('a');
+                link.download = 'watermarked-document.png';
+                link.href = previewCanvas.toDataURL('image/png');
+                link.click();
+            });
+            
+            // Export as PDF
+            exportPdf.addEventListener('click', function() {
+                if (!originalImage) {
+                    alert('Please upload an image first');
+                    return;
+                }
+                
+                // Using jsPDF library
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: previewCanvas.width > previewCanvas.height ? 'landscape' : 'portrait',
+                    unit: 'px',
+                    format: [previewCanvas.width, previewCanvas.height]
+                });
+                
+                const imgData = previewCanvas.toDataURL('image/jpeg', 0.8);
+                doc.addImage(imgData, 'JPEG', 0, 0, previewCanvas.width, previewCanvas.height);
+                doc.save('watermarked-document.pdf');
+            });
+            
+            // Drag and drop functionality
+            const uploadLabel = document.getElementById('uploadLabel');
+            const watermarkLabel = document.getElementById('watermarkLabel');
+            
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadLabel.addEventListener(eventName, preventDefaults, false);
+                watermarkLabel.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            // Highlight drop area when item is dragged over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadLabel.addEventListener(eventName, highlight, false);
+                watermarkLabel.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadLabel.addEventListener(eventName, unhighlight, false);
+                watermarkLabel.addEventListener(eventName, unhighlight, false);
+            });
+            
+            // Handle dropped files
+            uploadLabel.addEventListener('drop', handleDrop, false);
+            watermarkLabel.addEventListener('drop', handleWatermarkDrop, false);
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            function highlight(e) {
+                this.style.backgroundColor = '#e3eaf3';
+            }
+            
+            function unhighlight(e) {
+                this.style.backgroundColor = '#f9f9f9';
+            }
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length) {
+                    fileInput.files = files;
+                    const event = new Event('change');
+                    fileInput.dispatchEvent(event);
+                }
+            }
+            
+            function handleWatermarkDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length) {
+                    watermarkInput.files = files;
+                    const event = new Event('change');
+                    watermarkInput.dispatchEvent(event);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
